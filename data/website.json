@@ -1,0 +1,12 @@
+{
+  "sources": [
+    { "name": "Toyota USA Newsroom", "url": "https://pressroom.toyota.com/", "type": "BRAND" },
+    { "name": "Ford Media Center", "url": "https://media.ford.com/content/fordmedia/fna/us/en/news.html", "type": "BRAND" },
+    { "name": "BMW Press", "url": "https://www.press.bmwgroup.com/global", "type": "BRAND" },
+    { "name": "Tesla Blog", "url": "https://www.tesla.com/blog", "type": "BRAND" },
+    { "name": "Car and Driver", "url": "https://www.caranddriver.com/news/", "type": "NEWS" },
+    { "name": "Autocar", "url": "https://www.autocar.co.uk/car-news", "type": "NEWS" },
+    { "name": "Motor1", "url": "https://www.motor1.com/news/", "type": "NEWS" },
+    { "name": "Autoblog", "url": "https://www.autoblog.com/category/news/", "type": "NEWS" }
+  ]
+}
