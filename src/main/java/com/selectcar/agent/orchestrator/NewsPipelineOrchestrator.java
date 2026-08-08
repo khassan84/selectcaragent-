@@ -4,12 +4,15 @@ import com.selectcar.agent.agent.ArticleWriterAgent;
 import com.selectcar.agent.agent.CarRelevanceFilterAgent;
 import com.selectcar.agent.agent.ContentExtractorAgent;
 import com.selectcar.agent.agent.DeduplicationAgent;
+import com.selectcar.agent.agent.ExpertReviewAgent;
 import com.selectcar.agent.agent.SocialStoryAgent;
 import com.selectcar.agent.agent.SourceReaderAgent;
 import com.selectcar.agent.agent.VideoScriptAgent;
 import com.selectcar.agent.agent.WebScannerAgent;
 import com.selectcar.agent.config.PipelineProperties;
 import com.selectcar.agent.model.ArticleListItem;
+import com.selectcar.agent.model.ExpertReview;
+import com.selectcar.agent.model.ExpertReviewRequest;
 import com.selectcar.agent.model.GeneratedArticle;
 import com.selectcar.agent.model.ScannedLink;
 import com.selectcar.agent.model.Source;
@@ -33,6 +36,9 @@ import java.util.List;
  *   <li>extract title/summary + enforce recency, write {@code articlelist.json}</li>
  *   <li>generate article, social story and video script via Ollama, write {@code articles.json}</li>
  * </ol>
+ *
+ * <p>{@link #generateExpertReview(ExpertReviewRequest)} is an independent, on-demand stage: it
+ * reviews one brand/model instead of consuming the scanned news links.</p>
  */
 @Component
 public class NewsPipelineOrchestrator {
@@ -47,6 +53,7 @@ public class NewsPipelineOrchestrator {
     private final ArticleWriterAgent articleWriterAgent;
     private final SocialStoryAgent socialStoryAgent;
     private final VideoScriptAgent videoScriptAgent;
+    private final ExpertReviewAgent expertReviewAgent;
     private final JsonStore jsonStore;
     private final PipelineProperties properties;
 
@@ -58,6 +65,7 @@ public class NewsPipelineOrchestrator {
                                     ArticleWriterAgent articleWriterAgent,
                                     SocialStoryAgent socialStoryAgent,
                                     VideoScriptAgent videoScriptAgent,
+                                    ExpertReviewAgent expertReviewAgent,
                                     JsonStore jsonStore,
                                     PipelineProperties properties) {
         this.sourceReaderAgent = sourceReaderAgent;
@@ -68,6 +76,7 @@ public class NewsPipelineOrchestrator {
         this.articleWriterAgent = articleWriterAgent;
         this.socialStoryAgent = socialStoryAgent;
         this.videoScriptAgent = videoScriptAgent;
+        this.expertReviewAgent = expertReviewAgent;
         this.jsonStore = jsonStore;
         this.properties = properties;
     }
@@ -117,6 +126,29 @@ public class NewsPipelineOrchestrator {
         }
         log.info("Wrote {} generated article(s) to {}", generated.size(), properties.getArticlesFile());
         return generated;
+    }
+
+    /**
+     * On-demand stage: generate an expert review for a single brand/model and append it to
+     * {@code expertreviews.json}.
+     */
+    public ExpertReview generateExpertReview(ExpertReviewRequest request) {
+        ExpertReview review = expertReviewAgent.review(request);
+        String file = properties.getExpertReviewsFile();
+        List<ExpertReview> reviews = new ArrayList<>(readExpertReviews());
+        reviews.add(review);
+        jsonStore.write(file, reviews);
+        log.info("Wrote expert review for '{}' to {}", request.displayName(), file);
+        return review;
+    }
+
+    private List<ExpertReview> readExpertReviews() {
+        String file = properties.getExpertReviewsFile();
+        if (!jsonStore.exists(file)) {
+            return List.of();
+        }
+        return jsonStore.read(file, new com.fasterxml.jackson.core.type.TypeReference<List<ExpertReview>>() {
+        });
     }
 
     private List<ArticleListItem> readArticleList() {
