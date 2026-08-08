@@ -24,6 +24,9 @@ public class PipelineProperties {
     /** Final file holding the generated articles. */
     private String articlesFile = "articles.json";
 
+    /** File holding the generated expert reviews. */
+    private String expertReviewsFile = "expertreviews.json";
+
     /** How many days back an article may be published and still be considered "recent". */
     private int lookbackDays = 7;
 
@@ -32,6 +35,9 @@ public class PipelineProperties {
 
     /** Minimum word count required for a generated news article. */
     private int minArticleWords = 1200;
+
+    /** Minimum word count required for a generated expert review. */
+    private int minReviewWords = 1000;
 
     /** HTTP timeout in milliseconds for scraping requests. */
     private int httpTimeoutMs = 15000;
@@ -80,6 +86,14 @@ public class PipelineProperties {
         this.articlesFile = articlesFile;
     }
 
+    public String getExpertReviewsFile() {
+        return expertReviewsFile;
+    }
+
+    public void setExpertReviewsFile(String expertReviewsFile) {
+        this.expertReviewsFile = expertReviewsFile;
+    }
+
     public int getLookbackDays() {
         return lookbackDays;
     }
@@ -102,6 +116,14 @@ public class PipelineProperties {
 
     public void setMinArticleWords(int minArticleWords) {
         this.minArticleWords = minArticleWords;
+    }
+
+    public int getMinReviewWords() {
+        return minReviewWords;
+    }
+
+    public void setMinReviewWords(int minReviewWords) {
+        this.minReviewWords = minReviewWords;
     }
 
     public int getHttpTimeoutMs() {
