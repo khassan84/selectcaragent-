@@ -40,6 +40,12 @@
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
 
+        <!-- Spring Web MVC for REST controllers -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
         <!-- Provides a configured ObjectMapper with JSR-310 (java.time) support -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
