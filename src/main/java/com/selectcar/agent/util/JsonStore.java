@@ -49,6 +49,35 @@ public class JsonStore {
         }
     }
 
+    /** Reads a file as raw text, e.g. a JSON sample used verbatim inside a prompt. */
+    public String readString(String fileName) {
+        try {
+            return Files.readString(resolve(fileName));
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read " + fileName, e);
+        }
+    }
+
+    /** Writes already-serialised JSON, re-formatting it when it parses. */
+    public void writeString(String fileName, String content) {
+        try {
+            Path target = resolve(fileName);
+            Files.createDirectories(target.getParent() == null ? dataDir : target.getParent());
+            Files.writeString(target, prettify(content));
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to write " + fileName, e);
+        }
+    }
+
+    private String prettify(String content) {
+        try {
+            return objectMapper.writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(objectMapper.readTree(content));
+        } catch (IOException e) {
+            return content;
+        }
+    }
+
     public void write(String fileName, Object value) {
         try {
             Path target = resolve(fileName);

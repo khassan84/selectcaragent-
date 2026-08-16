@@ -6,13 +6,17 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.selectcar.agent.config.PipelineProperties;
 import com.selectcar.agent.model.ExpertReview;
 import com.selectcar.agent.model.ExpertReviewRequest;
+import com.selectcar.agent.util.JsonStore;
 
+@Component
 public class ExpertReviewAgent2 {
 
     private static final Logger log = LoggerFactory.getLogger(ExpertReviewAgent2.class);
@@ -26,39 +30,35 @@ public class ExpertReviewAgent2 {
             qualitatively instead of guessing.
             Return only the review body, with no preamble and no word-count notes.
             """;
-    
-    
-    private static final String SAMPLE_JSON = """
-			{
-				"brand": "Toyota",
-				"model": "Corolla",
-				"modelYear": 2025,
-				"variant": "GR Sport 1.8 Hybrid",
-				"market": "UK",
-				"price": "from £30,995 OTR",
-				"specs": [
-					"0-100 km/h: 7.4 s",
-					"Top speed: 180 km/h",
-					"Fuel economy: 4.5 l/100 km"
-				],
-				"focusAreas": [
-					"ride comfort",
-					"interior quality"
-				],
-				"notes": "This is the latest generation of the Corolla, featuring a new hybrid powertrain and updated styling."
-			}
-			""";
 
     private final ChatClient chatClient;
     private final PipelineProperties properties;
     private final ObjectMapper objectMapper;
+    private final JsonStore jsonStore;
 
-    
-    public ExpertReviewAgent2(ChatClient chatClient, PipelineProperties properties, ObjectMapper objectMapper) {
+    /** Sample review JSON read from the data directory; cached after the first read. */
+    private volatile String sampleJson;
+
+    public ExpertReviewAgent2(ChatClient chatClient, PipelineProperties properties, ObjectMapper objectMapper,
+            JsonStore jsonStore) {
         this.chatClient = chatClient;
         this.properties = properties;
         this.objectMapper = objectMapper;
-        
+        this.jsonStore = jsonStore;
+    }
+
+    /** Loads {@code expertreviewsample.json} from the data directory and caches it. */
+    String sampleJson() {
+        String cached = sampleJson;
+        if (cached == null) {
+            String file = properties.getExpertReviewSampleFile();
+            if (!jsonStore.exists(file)) {
+                throw new IllegalStateException("Expert review sample file not found: " + jsonStore.resolve(file));
+            }
+            cached = jsonStore.readString(file);
+            sampleJson = cached;
+        }
+        return cached;
     }
 
     /** Generates the review for {@code request} and returns it with metadata. */
@@ -88,12 +88,12 @@ public class ExpertReviewAgent2 {
                    7. Final Verdict – who should buy it and why
 
                    Rules:
-                   - Return ONLY valid JSON matching the sample structure
-                   - overall_rating must be a number between 1.0 and 10.0
+                   - Return ONLY valid JSON matching the sample structure, with one entry in the
+                     "reviews" array per section above (each with a "header" and a "text")
                    - Write in clear, professional English
                    - Be balanced and realistic
                    - Do not invent specific numbers you are not sure about
-                   """.formatted(request.brand(), request.model(), request.variant(), request.price(), SAMPLE_JSON);
+                   """.formatted(request.brand(), request.model(), request.variant(), request.price(), sampleJson());
            
            String jsonResponse = chatClient.prompt()
                    .system(SYSTEM)
@@ -105,12 +105,13 @@ public class ExpertReviewAgent2 {
                // Clean possible markdown if model still adds it
                jsonResponse = cleanJson(jsonResponse);
 
-               ExpertReview2 review = objectMapper.readValue(jsonResponse, ExpertReview2.class);
+               JsonNode sections = objectMapper.readTree(jsonResponse).path("reviews");
+               if (!sections.isArray() || sections.isEmpty()) {
+                   throw new IllegalStateException("Review JSON has no 'reviews' sections");
+               }
 
-               // Force brand & model from input (in case model changes them)
-
-               log.info("Successfully generated expert review for {} {} | Rating: {}",
-            		   request.brand(), request.model(), review.getOverallRating());
+               log.info("Successfully generated expert review for {} {} | {} section(s)",
+            		   request.brand(), request.model(), sections.size());
 
                return jsonResponse;
 
@@ -197,58 +198,5 @@ public class ExpertReviewAgent2 {
     private String chat(String userPrompt) {
         return chatClient.prompt().system(SYSTEM).user(userPrompt).call().content();
     }
-
-    
-    
-    public static class ExpertReview2 {
-        private String brand;
-        private String model;
-        private String introduction;
-        private String designExterior;
-        private String interiorFeatures;
-        private String performanceDriving;
-        private String fuelEfficiencyPracticality;
-        private java.util.List<String> pros;
-        private java.util.List<String> cons;
-        private String verdict;
-        private double overallRating;
-
-        // Getters & Setters
-        public String getBrand() { return brand; }
-        public void setBrand(String brand) { this.brand = brand; }
-
-        public String getModel() { return model; }
-        public void setModel(String model) { this.model = model; }
-
-        public String getIntroduction() { return introduction; }
-        public void setIntroduction(String introduction) { this.introduction = introduction; }
-
-        public String getDesignExterior() { return designExterior; }
-        public void setDesignExterior(String designExterior) { this.designExterior = designExterior; }
-
-        public String getInteriorFeatures() { return interiorFeatures; }
-        public void setInteriorFeatures(String interiorFeatures) { this.interiorFeatures = interiorFeatures; }
-
-        public String getPerformanceDriving() { return performanceDriving; }
-        public void setPerformanceDriving(String performanceDriving) { this.performanceDriving = performanceDriving; }
-
-        public String getFuelEfficiencyPracticality() { return fuelEfficiencyPracticality; }
-        public void setFuelEfficiencyPracticality(String fuelEfficiencyPracticality) {
-            this.fuelEfficiencyPracticality = fuelEfficiencyPracticality;
-        }
-
-        public java.util.List<String> getPros() { return pros; }
-        public void setPros(java.util.List<String> pros) { this.pros = pros; }
-
-        public java.util.List<String> getCons() { return cons; }
-        public void setCons(java.util.List<String> cons) { this.cons = cons; }
-
-        public String getVerdict() { return verdict; }
-        public void setVerdict(String verdict) { this.verdict = verdict; }
-
-        public double getOverallRating() { return overallRating; }
-        public void setOverallRating(double overallRating) { this.overallRating = overallRating; }
-    }
-    
 
 }
