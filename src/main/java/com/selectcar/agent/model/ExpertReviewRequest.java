@@ -39,6 +39,10 @@ public record ExpertReviewRequest(
     public static ExpertReviewRequest of(String brand, String model) {
         return new ExpertReviewRequest(brand, model, null, null, null, null, List.of(), List.of(), null);
     }
+    
+    public static ExpertReviewRequest of(String brand, String model, String price, String variant) {
+        return new ExpertReviewRequest(brand, model, null, variant, null, price, List.of(), List.of(), null);
+    }
 
     /** Human-readable name of the car, e.g. {@code "2025 Toyota Corolla GR Sport"}. */
     public String displayName() {

@@ -71,6 +71,8 @@ public class ExpertReviewAgent2 {
 
                    Brand: %s
                    Model: %s
+                   Variant: %s
+                   Price: %s
 
                    Follow this exact JSON structure (use it as reference):
 
@@ -91,7 +93,7 @@ public class ExpertReviewAgent2 {
                    - Write in clear, professional English
                    - Be balanced and realistic
                    - Do not invent specific numbers you are not sure about
-                   """.formatted(request.brand(), request.model(), SAMPLE_JSON);
+                   """.formatted(request.brand(), request.model(), request.variant(), request.price(), SAMPLE_JSON);
            
            String jsonResponse = chatClient.prompt()
                    .system(SYSTEM)

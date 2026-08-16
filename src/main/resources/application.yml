@@ -24,7 +24,8 @@ selectcar:
   min-article-words: 1200
   min-review-words: 1000
   http-timeout-ms: 15000
-
+  run-pipeline: true
+  review-status: reviewStatus.json
 logging:
   level:
     com.selectcar.agent: INFO

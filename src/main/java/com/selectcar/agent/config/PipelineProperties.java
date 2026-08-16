@@ -41,10 +41,14 @@ public class PipelineProperties {
 
     /** HTTP timeout in milliseconds for scraping requests. */
     private int httpTimeoutMs = 15000;
+    
+    private String reviewStatus = "reviewStatus.json";
 
     /** User-Agent used for scraping. */
     private String userAgent =
             "Mozilla/5.0 (compatible; SelectCarAgent/0.1; +https://github.com/khassan84/selectcaragent)";
+    
+    private boolean runPipeline = false;
 
     public String getDataDir() {
         return dataDir;
@@ -141,4 +145,21 @@ public class PipelineProperties {
     public void setUserAgent(String userAgent) {
         this.userAgent = userAgent;
     }
+    
+    public boolean isRunPipeline() {
+		return runPipeline;
+	}
+    
+    public void setRunPipeline(boolean runPipeline) {
+    			this.runPipeline = runPipeline;
+    }
+    
+    public String getReviewStatus() {
+		return reviewStatus;
+	}
+    
+    public void setReviewStatus(String reviewStatus) {
+		this.reviewStatus = reviewStatus;
+	}
+    
 }

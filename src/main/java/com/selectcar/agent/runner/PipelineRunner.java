@@ -1,14 +1,16 @@
 package com.selectcar.agent.runner;
 
-import com.selectcar.agent.model.ExpertReviewRequest;
-import com.selectcar.agent.orchestrator.NewsPipelineOrchestrator;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
+import com.selectcar.agent.config.PipelineProperties;
+import com.selectcar.agent.model.ExpertReviewRequest;
+import com.selectcar.agent.orchestrator.NewsPipelineOrchestrator;
 
 /**
  * Entry point that runs the pipeline when the application starts.
@@ -32,9 +34,11 @@ public class PipelineRunner implements ApplicationRunner {
     private static final Logger log = LoggerFactory.getLogger(PipelineRunner.class);
 
     private final NewsPipelineOrchestrator orchestrator;
+    private final PipelineProperties properties;
 
-    public PipelineRunner(NewsPipelineOrchestrator orchestrator) {
+    public PipelineRunner(NewsPipelineOrchestrator orchestrator, PipelineProperties properties) {
         this.orchestrator = orchestrator;
+        this.properties = properties;
     }
 
     @Override
