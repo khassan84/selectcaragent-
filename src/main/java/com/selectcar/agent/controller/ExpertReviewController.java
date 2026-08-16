@@ -4,12 +4,16 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,6 +29,8 @@ import com.selectcar.agent.util.JsonStore;
 @RestController
 @RequestMapping("/api")
 public class ExpertReviewController {
+
+	private static final Logger log = LoggerFactory.getLogger(ExpertReviewController.class);
 	
 	@Autowired
 	private	
@@ -61,24 +67,27 @@ public class ExpertReviewController {
     
     @GetMapping("/lookup/{brand}/{model}")
     public ExpertReview lookup(@PathVariable(name = "brand") String brand, @PathVariable(name = "model") String model) {
-        // Create a minimal request with brand and model and delegate to the agent
-    	
-    	try {
-			List<Model> models = readModelsFromResource("model-index.json");
-	        ExpertReviewRequest request = ExpertReviewRequest.of(brand, model);
-	        models.forEach(m-> {
-	        	if (m.getBrand().equalsIgnoreCase(brand) && m.getModel().equalsIgnoreCase(model)) {
-	        		String review = expertReviewService.generateReviewSummary(m);
-	        		System.out.println("Expert review for " + m.getBrand() + " " + m.getModel() + ": " + review);
-	        	}
-	        });
-	        return expertReviewAgent.review(request);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-    	return null;
+        List<Model> models;
+        try {
+            models = readModelsFromResource("model-index.json");
+        } catch (Exception e) {
+            log.error("Failed to read model index", e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Model index unavailable");
+        }
 
+        Model match = models.stream()
+                .filter(m -> m.getBrand() != null && m.getBrand().equalsIgnoreCase(brand)
+                        && m.getModel() != null && m.getModel().equalsIgnoreCase(model))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Unknown model: " + brand + " " + model));
+
+        ExpertReviewRequest request = ExpertReviewRequest.of(
+                match.getBrand(),
+                match.getModel(),
+                ExpertReviewService.getPriceRange(match),
+                ExpertReviewService.getVariantNamesAndCount(match));
+        return expertReviewAgent.review(request);
     }
     
     public static List<Model> readModelsFromJson(String filePath) throws Exception {
@@ -111,18 +120,16 @@ public class ExpertReviewController {
             return false;
         }
 
-        // Read path from properties (should point to data/review_status.json)
+        // Read path from properties (resolved against the configured data directory)
         String filePath = properties.getReviewStatus();
-        File reviewStatusFile = new File(filePath);
-        
-        List<ReviewStatus> statusList = jsonStore.read(filePath, new TypeReference<List<ReviewStatus>>() {
-        });
 
         // If tracking file does not exist yet → nothing is done
-        if (!reviewStatusFile.exists()) {
+        if (!jsonStore.exists(filePath)) {
             return false;
         }
 
+        List<ReviewStatus> statusList = jsonStore.read(filePath, new TypeReference<List<ReviewStatus>>() {
+        });
 
         String brand = model.getBrand().trim();
         String modelName = model.getModel().trim();
