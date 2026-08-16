@@ -27,6 +27,12 @@ public class PipelineProperties {
     /** File holding the generated expert reviews. */
     private String expertReviewsFile = "expertreviews.json";
 
+    /** Sample review JSON handed to the LLM as the structure to follow. */
+    private String expertReviewSampleFile = "expertreviewsample.json";
+
+    /** Directory (inside the data dir) where one file per generated review is stored. */
+    private String expertReviewsDir = "expertreviews";
+
     /** How many days back an article may be published and still be considered "recent". */
     private int lookbackDays = 7;
 
@@ -96,6 +102,22 @@ public class PipelineProperties {
 
     public void setExpertReviewsFile(String expertReviewsFile) {
         this.expertReviewsFile = expertReviewsFile;
+    }
+
+    public String getExpertReviewSampleFile() {
+        return expertReviewSampleFile;
+    }
+
+    public void setExpertReviewSampleFile(String expertReviewSampleFile) {
+        this.expertReviewSampleFile = expertReviewSampleFile;
+    }
+
+    public String getExpertReviewsDir() {
+        return expertReviewsDir;
+    }
+
+    public void setExpertReviewsDir(String expertReviewsDir) {
+        this.expertReviewsDir = expertReviewsDir;
     }
 
     public int getLookbackDays() {

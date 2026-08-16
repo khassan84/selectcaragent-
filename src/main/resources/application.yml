@@ -19,6 +19,8 @@ selectcar:
   article-list-file: articlelist.json
   articles-file: articles.json
   expert-reviews-file: expertreviews.json
+  expert-review-sample-file: expertreviewsample.json
+  expert-reviews-dir: expertreviews
   lookback-days: 7
   max-links-per-source: 25
   min-article-words: 1200
